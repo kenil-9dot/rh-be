@@ -1,0 +1,136 @@
+// PostgreSQL + Prisma schema (from rh.sql – HR DB)
+// Run: npx prisma generate && npx prisma db push
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id        Int      @id @default(autoincrement())
+  name      String
+  isDeleted Boolean  @default(false) @map("is_deleted")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  users     User[]
+}
+
+model Department {
+  id        Int      @id @default(autoincrement())
+  name      String
+  isDeleted Boolean  @default(false) @map("is_deleted")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  users     User[]
+  employees Employee[]
+  contracts Contract[]
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  fullName     String   @map("full_name")
+  roleId       Int      @map("role_id")
+  departmentId Int      @map("department_id")
+  username     String   @unique
+  password     String
+  status       Int      @default(1)
+  isDeleted    Boolean  @default(false) @map("is_deleted")
+  createdAt    DateTime @default(now()) @map("created")
+  updatedAt    DateTime @updatedAt @map("modified")
+
+  role       Role        @relation(fields: [roleId], references: [id])
+  department Department  @relation(fields: [departmentId], references: [id])
+  sessions   Session[]
+  employees  Employee[]
+}
+
+model Session {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  refreshToken String   @map("refresh_token")
+  userAgent    String?  @map("user_agent")
+  ipAddress    String?  @map("ip_address")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Employee {
+  id             Int      @id @default(autoincrement())
+  firstName      String   @map("first_name")
+  lastName       String   @map("last_name")
+  userId         Int      @map("user_id")
+  departmentId   Int      @map("department_id")
+  photoUrl       String?  @map("photo_url")
+  gender         Int      @default(1)
+  dob            DateTime? @db.Date
+  maritalStatus  Int      @default(1) @map("marital_status")
+  idPhotoUrl     String?  @map("id_photo_url")
+  personalPhone  String?  @map("personal_phone")
+  workPhone      String?  @map("work_phone")
+  personalEmail  String?  @map("personal_email")
+  workEmail      String?  @map("work_email")
+  address        String
+  status         Int      @default(1)
+  isDeleted      Boolean  @default(false) @map("is_deleted")
+  createdAt      DateTime @default(now()) @map("created")
+  updatedAt      DateTime @updatedAt @map("modified")
+
+  user       User   @relation(fields: [userId], references: [id])
+  department Department @relation(fields: [departmentId], references: [id])
+  contracts  Contract[]
+}
+
+model Contract {
+  id                 Int      @id @default(autoincrement())
+  employeeId         Int      @map("employee_id")
+  departmentId       Int      @map("department_id")
+  userId             Int      @map("user_id")
+  contractUrl        String?  @map("contract_url")
+  jobTitle           String?  @map("job_title")
+  jobDescription     String?  @map("job_description") @db.Text
+  type               Int      @default(1)
+  startDate          DateTime @map("start_date") @db.Date
+  probationStartDate DateTime? @map("probation_start_date") @db.Date
+  probationEndDate   DateTime? @map("probation_end_date") @db.Date
+  confirmationDate   DateTime? @map("confirmation_date") @db.Date
+  status             Int      @default(1)
+  salaryType         Int      @default(1) @map("salary_type")
+  salary             Float    @default(0)
+  createdAt          DateTime @default(now()) @map("created")
+  updatedAt          DateTime @updatedAt @map("modified")
+
+  employee   Employee   @relation(fields: [employeeId], references: [id])
+  department Department @relation(fields: [departmentId], references: [id])
+}
+
+model Note {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  employeeId  Int      @map("employee_id")
+  title       String
+  description String   @db.Text
+  fileUrl     String?  @map("file_url")
+  createdAt   DateTime @default(now()) @map("created")
+  updatedAt   DateTime @updatedAt @map("modified")
+}
+
+model Payment {
+  id            Int      @id @default(autoincrement())
+  employeeId    Int      @map("employee_id")
+  type          Int      @default(1)
+  accountNumber String?  @map("account_number")
+  bankName      String?  @map("bank_name")
+  accountType   String?  @map("account_type")
+  fullName      String   @map("full_name")
+  phoneNumber   String?  @map("phone_number")
+  userId        Int      @map("user_id")
+  createdAt     DateTime @default(now()) @map("created")
+  updatedAt     DateTime @updatedAt @map("modified")
+}
