@@ -12,7 +12,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "db:create": "node scripts/create-db.js"
+    "db:create": "node scripts/create-db.js",
+    "db:setup": "prisma db push && npm run seed:dev"
   },
   "keywords": [],
   "author": "",
