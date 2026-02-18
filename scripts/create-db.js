@@ -1,4 +1,4 @@
-import pg from "pg";
+import mysql from "mysql2/promise";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -16,36 +16,33 @@ if (!url) {
   process.exit(1);
 }
 
-// Parse URL and get connection to default 'postgres' database
+// Parse MySQL URL and get connection without database
 const parsed = new URL(url);
-const dbName = parsed.pathname.slice(1).split("?")[0];
-parsed.pathname = "/postgres";
-const postgresUrl = parsed.toString();
+const dbName = parsed.pathname.slice(1).replace(/\/$/, "").split("?")[0];
 
-const client = new pg.Client({ connectionString: postgresUrl });
+if (!dbName) {
+  console.error("❌ No database name in DATABASE_URL");
+  process.exit(1);
+}
+
+const connectionConfig = {
+  host: parsed.hostname,
+  port: parseInt(parsed.port || "3306", 10),
+  user: parsed.username,
+  password: parsed.password,
+};
 
 async function createDb() {
+  let connection;
   try {
-    await client.connect();
-    const res = await client.query(
-      `SELECT 1 FROM pg_database WHERE datname = $1`,
-      [dbName],
-    );
-    if (res.rows.length > 0) {
-      console.log(`✅ Database "${dbName}" already exists`);
-      return;
-    }
-    await client.query(`CREATE DATABASE "${dbName}"`);
-    console.log(`✅ Database "${dbName}" created`);
+    connection = await mysql.createConnection(connectionConfig);
+    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
+    console.log(`✅ Database "${dbName}" created or already exists`);
   } catch (err) {
-    if (err.code === "42P04") {
-      console.log(`✅ Database "${dbName}" already exists`);
-    } else {
-      console.error("❌ Failed to create database:", err.message);
-      process.exit(1);
-    }
+    console.error("❌ Failed to create database:", err.message);
+    process.exit(1);
   } finally {
-    await client.end();
+    if (connection) await connection.end();
   }
 }
 
